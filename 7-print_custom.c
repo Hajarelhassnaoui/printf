@@ -1,125 +1,48 @@
 #include "main.h"
-
 /**
- * _print_percent - prints the "%" character to stdout
- * @valist: va_list parameter
- * @f: pointer to flag_t
- * @m: pointer to mod_t
- *
- * Return: number of characters
+ * handle_print - Prints an argument based on its type
+ * @fmt: Formatted string in which to print the arguments.
+ * @list: List of arguments to be printed.
+ * @ind: ind.
+ * @buffer: Buffer array to handle print.
+ * @flags: Calculates active flags
+ * @width: get width.
+ * @precision: Precision specification
+ * @size: Size specifier
+ * Return: 1 or 2;
  */
-int _print_percent(va_list valist, flag_t *f, mod_t *m)
+int handle_print(const char *fmt, int *ind, va_list list, char buffer[],
+        int flags, int width, int precision, int size)
 {
-	(void)valist;
-	(void)f;
-	(void)m;
-	return (_putchar('%'));
-}
-
-
-/**
- * _print_specifier - handles custom conversion specifier
- * @valist: variable list of arguments
- * @f: pointer to flag_t
- * @m: pointer to mod_t
- *
- * Return: counts of characters
- */
-int _print_specifier(va_list valist, flag_t *f, mod_t *m)
-{
-	int i;
-	int count = 0;
-	char *hex;
-	char *str = va_arg(valist, char *);
-
-	if (str == NULL)
-	{
-		str = "(null)";
-		return (_puts(str));
-	}
-
-	for (i = 0; str[i]; i++)
-	{
-		if (str[i] > 0 && (str[i] < 32 || str[i] >= 127))
-		{
-
-			count += _putchar('\\');
-			count += _putchar('x');
-			hex =  convert(str[i], 16, 0);
-			if (!hex[1])
-			{
-				count += _putchar('0');
-			}
-			count += _puts(hex);
-		}
-		else
-			count += _putchar(str[i]);
-	}
-	(void)f;
-	(void)m;
-	return (count);
-}
-
-
-/**
- * _print_reverse - prints a string in reverse
- * @valist: va_list parameter
- * @f: pointer to flag_t
- * @m: pointer to mod_t
- *
- * Return: count of characters in the string
- */
-int _print_reverse(va_list valist, flag_t *f, mod_t *m)
-{
-	char *str = va_arg(valist, char *);
-	int i = 0, j;
-
-	(void)f;
-	(void)m;
-
-	if (!str)
-		return (_puts("(null)"));
-
-	while (str[i])
-		i++;
-	for (j = i - 1; j >= 0; j--)
-		_putchar(str[j]);
-
-	return (i);
-}
-
-/**
- * _print_rot13 - prints the rot13 encoding of a
- * combination of characters
- * @valist: va_list parameter
- * @f: pointer to flag_t
- * @m: pointer to mod_t
- *
- * Return: character count
- */
-int _print_rot13(va_list valist, flag_t *f, mod_t *m)
-{
-	char *str = va_arg(valist, char *);
-	char *input = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	char *output = "nopqrstuvwxyzabcdefghijklmNOPQRSTUVWXYZABCDEFGHIJKLM";
-	int i, j;
-
-
-	(void)f;
-	(void)m;
-
-	for (i = 0; str[i] != '\0'; i++)
-	{
-		if ((str[i] < 65 || str[i] > 90) && (str[i] < 97 || str[i] > 122))
-			_putchar(str[i]);
-		else
-		{
-			for (j = 0; j < 52; j++)
-			{
-				if (input[j] == str[i])
-					_putchar(output[j]);
-			}
-		}
-	}
-	return (i);
+        int i, unknow_len = 0, printed_chars = -1;
+        fmt_t fmt_types[] = {
+                {'c', print_char}, {'s', print_string}, {'%', print_percent},
+                {'i', print_int}, {'d', print_int}, {'b', print_binary},
+                {'u', print_unsigned}, {'o', print_octal}, {'x', print_hexadecimal},
+                {'X', print_hexa_upper}, {'p', print_pointer}, {'S', print_non_printable},
+                {'r', print_reverse}, {'R', print_rot13string}, {'\0', NULL}
+        };
+        for (i = 0; fmt_types[i].fmt != '\0'; i++)
+                if (fmt[*ind] == fmt_types[i].fmt)
+                        return (fmt_types[i].fn(list, buffer, flags, width, precision, size));
+        if (fmt_types[i].fmt == '\0')
+        {
+                if (fmt[*ind] == '\0')
+                        return (-1);
+                unknow_len += write(1, "%%", 1);
+                if (fmt[*ind - 1] == ' ')
+                        unknow_len += write(1, " ", 1);
+                else if (width)
+                {
+                        --(*ind);
+                        while (fmt[*ind] != ' ' && fmt[*ind] != '%')
+                                --(*ind);
+                        if (fmt[*ind] == ' ')
+                                --(*ind);
+                        return (1);
+                }
+                unknow_len += write(1, &fmt[*ind], 1);
+                return (unknow_len);
+        }
+        return (printed_chars);
 }
